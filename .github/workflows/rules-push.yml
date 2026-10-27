@@ -1,0 +1,36 @@
+name: Rules PR push
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    env:
+      BRANCH: bot/test-rules
+    steps:
+      - id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.MOBILE_CI_APP_CLIENT_ID }}
+          private-key: ${{ secrets.MOBILE_CI_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: develop
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Open the rules PR
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          git switch --quiet -C "$BRANCH"
+          date -u +%FT%TZ > RULES
+          git add RULES
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit --quiet -m "feat: refresh rules"
+          git push --quiet --force origin "$BRANCH"
+          gh pr create --base develop --head "$BRANCH" --title "feat: refresh rules" --body "Pushed through a checkout with the App token"
