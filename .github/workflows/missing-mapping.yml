@@ -1,0 +1,11 @@
+name: Call reusable without a secrets block
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  call-reusable:
+    uses: ./.github/workflows/publish-reusable.yml
