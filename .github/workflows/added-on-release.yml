@@ -1,0 +1,13 @@
+name: Added on release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "added on a release branch"
