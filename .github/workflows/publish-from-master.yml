@@ -1,0 +1,16 @@
+name: Publish from master
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  call-reusable:
+    if: ${{ github.event.pull_request.merged == true }}
+    uses: ./.github/workflows/publish-reusable.yml
+    secrets:
+      MOBILE_CI_APP_PRIVATE_KEY: ${{ secrets.MOBILE_CI_APP_PRIVATE_KEY }}

@@ -1,0 +1,56 @@
+name: Prepare release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  branch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      release_branch: ${{ steps.push.outputs.release_branch }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: develop
+      - id: push
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "release/$VERSION"
+          echo "$VERSION" > VERSION
+          git add VERSION
+          git commit -m "Bump version to $VERSION"
+          git push origin "release/$VERSION"
+          echo "release_branch=release/$VERSION" >> "$GITHUB_OUTPUT"
+
+  create_pull_request:
+    runs-on: ubuntu-latest
+    needs: branch
+    steps:
+      - name: Create App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.MOBILE_CI_APP_CLIENT_ID }}
+          private-key: ${{ secrets.MOBILE_CI_APP_PRIVATE_KEY }}
+          permission-contents: read
+          permission-pull-requests: write
+      - name: Create PR via GitHub CLI
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          SRC: ${{ needs.branch.outputs.release_branch }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh pr create --repo "$REPO" --base master --head "$SRC" --title "Release $SRC" --body "Automated PR: merge $SRC into master"
+          gh pr comment "$SRC" --repo "$REPO" --body "Comment made with an App token that has pull-requests: write only"

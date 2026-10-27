@@ -1,0 +1,35 @@
+name: Merge PR with the App token
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: 'PR number'
+        required: true
+      workflows_permission:
+        description: 'write, or empty for none'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.MOBILE_CI_APP_CLIENT_ID }}
+          private-key: ${{ secrets.MOBILE_CI_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-workflows: ${{ inputs.workflows_permission }}
+      - name: Merge without auto-merge
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR: ${{ inputs.pr }}
+          REPO: ${{ github.repository }}
+        run: gh pr merge "$PR" --repo "$REPO" --merge
