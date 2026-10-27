@@ -1,0 +1,33 @@
+name: Token format
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.MOBILE_CI_APP_CLIENT_ID }}
+          private-key: ${{ secrets.MOBILE_CI_APP_PRIVATE_KEY }}
+          permission-contents: read
+      - name: Report token shapes without printing them
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+          WORKFLOW_TOKEN: ${{ github.token }}
+        run: |
+          for name in APP_TOKEN WORKFLOW_TOKEN; do
+            value=${!name}
+            dots=$(printf '%s' "$value" | tr -cd '.' | wc -c | tr -d ' ')
+            echo "$name prefix=${value:0:4} length=${#value} dots=$dots"
+          done
+      - name: Use the App token with gh
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: gh api repos/${{ github.repository }} --jq .full_name
