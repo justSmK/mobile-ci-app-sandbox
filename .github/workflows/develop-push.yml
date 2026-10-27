@@ -12,4 +12,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Report actor
-        run: echo "actor=$GITHUB_ACTOR sha=$GITHUB_SHA"
+        run: echo "develop push: actor=$GITHUB_ACTOR sha=$GITHUB_SHA"
